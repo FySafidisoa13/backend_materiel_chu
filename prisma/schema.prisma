@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Categorie {
+  id_categorie  Int      @id @default(autoincrement())
+  nom_categorie String   @unique
+  classes       Classe[]
+}
+
+model Classe {
+  id_classe    Int           @id @default(autoincrement())
+  nom_classe   String        @unique
+  code_classe String?        @unique
+  id_categorie Int
+  categorie    Categorie     @relation(fields: [id_categorie], references: [id_categorie])
+  materiels    Materiels[]
+  consommable  Consommable[]
+}
+
+model Donneur {
+  id_donneur       Int               @id @default(autoincrement())
+  nom_donneur      String
+  fonction_donneur String
+  lot_materiels    Lot_materiels[]
+  lot_consommables Lot_consommable[]
+}
+
+model Lot_materiels {
+  id_lot      Int       @id @default(autoincrement())
+  etat        Etat
+  numero      String    @unique
+  date_don    DateTime  @default(now())
+  codeQR      String?   @unique
+  id_donneur  Int
+  id_materiel Int
+  Materiels   Materiels @relation(fields: [id_materiel], references: [id_materiel])
+  donneur     Donneur   @relation(fields: [id_donneur], references: [id_donneur])
+  prets       Pret[]
+}
+
+model Materiels {
+  id_materiel   Int             @id @default(autoincrement())
+  nom_materiel  String
+  id_classe     Int
+  classe        Classe          @relation(fields: [id_classe], references: [id_classe])
+  Notification  Notification[]
+  demandes      Demande[]
+  lot_materiels Lot_materiels[]
+}
+
+model Service {
+  id_service   Int            @id @default(autoincrement())
+  nom_service  String
+  localisation String
+  Notification Notification[]
+  personnes    Personne[]
+  demandes     Demande[]
+  prets        Pret[]
+}
+
+model Personne {
+  id_personne Int     @id @default(autoincrement())
+  IM          Int?    @unique
+  nom         String
+  cin         String  @unique
+  telephone   Int?
+  adress      String
+  fonction    String
+  id_service  Int
+  service     Service @relation(fields: [id_service], references: [id_service])
+  compte      Compte?
+}
+
+model Compte {
+  id_compte         Int      @id @default(autoincrement())
+  pseudo            String   @unique
+  mdp               String
+  code_recuperation Int?
+  type              Type
+  id_personne       Int      @unique
+  personne          Personne @relation(fields: [id_personne], references: [id_personne])
+}
+
+model Lot_consommable {
+  id_lot_consommable   Int         @id @default(autoincrement())
+  quantite_don         Int
+  date_don_consommable DateTime    @default(now())
+  id_consommable       Int
+  id_donneur           Int
+  donneur              Donneur     @relation(fields: [id_donneur], references: [id_donneur])
+  consommable          Consommable @relation(fields: [id_consommable], references: [id_consommable])
+}
+
+model Demande {
+  id_demande     Int           @id @default(autoincrement())
+  date_demande   DateTime      @default(now())
+  statut         StatutDemande @default(EN_ATTENTE)
+  id_service     Int
+  id_materiel    Int?
+  id_consommable Int?
+  quantite       Int?
+  commentaire    String?
+  service        Service       @relation(fields: [id_service], references: [id_service])
+  materiel       Materiels?    @relation(fields: [id_materiel], references: [id_materiel])
+  consommable    Consommable?  @relation(fields: [id_consommable], references: [id_consommable])
+}
+
+enum StatutDemande {
+  EN_ATTENTE
+  REFUSEE
+  TRAITEE
+}
+
+model Consommable {
+  id_consommable        Int               @id @default(autoincrement())
+  nom_consommable       String            @unique
+  unite                 String?
+  reference_consommable String?
+  quantite_consommable  Int?
+  prix_unitaire         Int?
+  id_classe             Int
+  classe                Classe            @relation(fields: [id_classe], references: [id_classe])
+  Notification          Notification[]
+  prets                 Pret[]
+  demandes              Demande[]
+  lot_consommables      Lot_consommable[]
+}
+
+model Pret {
+  id_pret        Int            @id @default(autoincrement())
+  date_envoi     DateTime       @default(now())
+  date_retour    DateTime?
+  id_service     Int?
+  id_lot         Int?
+  id_consommable Int?
+  quantite_pret  Int?
+  service        Service?       @relation(fields: [id_service], references: [id_service])
+  lot_materiels  Lot_materiels? @relation(fields: [id_lot], references: [id_lot])
+  consommable    Consommable?   @relation(fields: [id_consommable], references: [id_consommable])
+}
+
+model Notification {
+  id_notification  Int              @id @default(autoincrement())
+  type             NotificationType
+  message          String
+  date             DateTime         @default(now())
+  id_service       Int?
+  service          Service?         @relation(fields: [id_service], references: [id_service])
+  id_materiel      Int?
+  materiel         Materiels?       @relation(fields: [id_materiel], references: [id_materiel])
+  id_consommable   Int?
+  consommable      Consommable?     @relation(fields: [id_consommable], references: [id_consommable])
+  is_read          Boolean          @default(false)
+  destinataireType DestinataireType
+  destinataireId   Int?
+}
+
+enum DestinataireType {
+  ADMIN
+  SERVICE
+}
+
+enum NotificationType {
+  MATERIEL_ETAT_MODIFIE
+  CONSOMMABLE_EPUISÉ
+  CONSOMMABLE_EPUISÉ_STOCK
+  MATERIEL_ENVOYE
+  CONSOMMABLE_RETIRE
+  CONSOMMABLE_ENVOYE
+  MATERIEL_RETIRE
+}
+
+enum Type {
+  DIRECTEUR
+  RESPONSABLE
+  SERVICE
+  SERVICE_VUE
+}
+
+enum Etat {
+  BON
+  MAUVAIS
+  MOYEN
+  EN_PANNE
+  PERDU
+}
