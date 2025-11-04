@@ -13,7 +13,7 @@ pipeline {
         POSTGRES_DB = 'chua_material'
         ENCODED_PASSWORD = sh(script: 'echo "${POSTGRES_PASSWORD}" | python3 -c "import urllib.parse; print(urllib.parse.quote(input()))"', returnStdout: true).trim()
         DATABASE_URL = "postgresql://${POSTGRES_USER}:${ENCODED_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?connect_timeout=10&sslmode=prefer"
-        CORS_ORIGIN = 'https://material.chu-andrainjato.mg,http://localhost:5713'
+        CORS_ORIGIN = 'http://173.249.44.110:4001,http://localhost:5713'
         JWT_SECRET = credentials('JWT_SECRET_ID')
         SALT_ROUNDS = 10
     }
