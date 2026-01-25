@@ -22,6 +22,7 @@ import inventaire_router from "./routes/inventaire_route.js";
 import distribution_router from "./routes/materiel_distribution_route.js";
 import standard_routes from "./routes/standard_route.js";
 import notification_routes from "./routes/notification_route.js";
+import depense_router from "./routes/depense_route.js";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/categorie", categorie_router);
+app.use("/api/depense", depense_router);
 app.use("/api/pret", pret_router);
 app.use("/api/pret_consommable", pret_consommable_router);
 app.use("/api/classe", classe_router);

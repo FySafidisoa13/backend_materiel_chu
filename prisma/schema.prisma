@@ -22,7 +22,7 @@ model Categorie {
 model Classe {
   id_classe    Int           @id @default(autoincrement())
   nom_classe   String        @unique
-  code_classe String?        @unique
+  code_classe  String?       @unique
   id_categorie Int
   categorie    Categorie     @relation(fields: [id_categorie], references: [id_categorie])
   materiels    Materiels[]
@@ -96,6 +96,7 @@ model Compte {
 model Lot_consommable {
   id_lot_consommable   Int         @id @default(autoincrement())
   quantite_don         Int
+  PU                   Int?
   date_don_consommable DateTime    @default(now())
   id_consommable       Int
   id_donneur           Int
@@ -144,6 +145,7 @@ model Pret {
   date_retour    DateTime?
   id_service     Int?
   id_lot         Int?
+  PU_envoie      Int?
   id_consommable Int?
   quantite_pret  Int?
   service        Service?       @relation(fields: [id_service], references: [id_service])

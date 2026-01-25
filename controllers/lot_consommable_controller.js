@@ -44,45 +44,215 @@ const count_lot_consommable = asyncHandler(async (req, res, next) => {
   }
 });
 
+// const create_lot_consommable = asyncHandler(async (req, res, next) => {
+//   try {
+//     const { quantite_don, id_consommable, ...otherFields } = req.body;
+
+//     // Création du lot_consommable
+//     const lot_consommable = await prisma.lot_consommable.create({
+//       data: {
+//         quantite_don,
+//         id_consommable,
+//         ...otherFields,
+//       },
+//     });
+
+//     // Récupérer la quantité actuelle du consommable
+//     const consommable = await prisma.consommable.findUnique({
+//       where: { id_consommable: Number(id_consommable) },
+//     });
+
+//     if (!consommable) {
+//       return res.status(404).json({ message: "Consommable non trouvé" });
+//     }
+
+//     // Si la quantité actuelle est null, on considère 0
+//     const ancienneQuantite = consommable.quantite_consommable ?? 0;
+
+//     // Mettre à jour la quantité
+//     await prisma.consommable.update({
+//       where: { id_consommable: Number(id_consommable) },
+//       data: {
+//         quantite_consommable: ancienneQuantite + Number(quantite_don),
+//       },
+//     });
+
+//     res.status(200).json(lot_consommable);
+//   } catch (error) {
+//     res.status(500).json(error);
+//   }
+// });
+
 const create_lot_consommable = asyncHandler(async (req, res, next) => {
   try {
-    const { quantite_don, id_consommable, ...otherFields } = req.body;
+    const { quantite_don, id_consommable, PU, id_donneur, date_don_consommable, ...otherFields } = req.body;
 
-    // Création du lot_consommable
-    const lot_consommable = await prisma.lot_consommable.create({
-      data: {
-        quantite_don,
-        id_consommable,
-        ...otherFields,
-      },
-    });
+    // Validation des champs obligatoires
+    if (!quantite_don || !id_consommable) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Les champs 'quantite_don' et 'id_consommable' sont obligatoires" 
+      });
+    }
 
-    // Récupérer la quantité actuelle du consommable
+    // Vérifier que la quantité est positive
+    if (quantite_don <= 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: "La quantité doit être supérieure à 0" 
+      });
+    }
+
+    // Vérifier que le consommable existe
     const consommable = await prisma.consommable.findUnique({
       where: { id_consommable: Number(id_consommable) },
     });
 
     if (!consommable) {
-      return res.status(404).json({ message: "Consommable non trouvé" });
+      return res.status(404).json({ 
+        success: false,
+        message: "Consommable non trouvé" 
+      });
     }
 
-    // Si la quantité actuelle est null, on considère 0
-    const ancienneQuantite = consommable.quantite_consommable ?? 0;
+    // Vérifier que le donneur existe (si fourni)
+    if (id_donneur) {
+      const donneur = await prisma.donneur.findUnique({
+        where: { id_donneur: Number(id_donneur) },
+      });
 
-    // Mettre à jour la quantité
-    await prisma.consommable.update({
-      where: { id_consommable: Number(id_consommable) },
-      data: {
-        quantite_consommable: ancienneQuantite + Number(quantite_don),
-      },
+      if (!donneur) {
+        return res.status(404).json({ 
+          success: false,
+          message: "Donneur non trouvé" 
+        });
+      }
+    }
+
+    // Préparer les données pour la création
+    const lotData = {
+      quantite_don: Number(quantite_don),
+      id_consommable: Number(id_consommable),
+      ...otherFields,
+    };
+
+    // Ajouter PU s'il est fourni
+    if (PU !== undefined && PU !== null) {
+      lotData.PU = Number(PU);
+    }
+
+    // Ajouter id_donneur s'il est fourni
+    if (id_donneur) {
+      lotData.id_donneur = Number(id_donneur);
+    }
+
+    // Ajouter date_don_consommable s'il est fourni
+    if (date_don_consommable) {
+      const parsedDate = new Date(date_don_consommable);
+      if (!isNaN(parsedDate.getTime())) {
+        lotData.date_don_consommable = parsedDate;
+      }
+    }
+
+    // Création du lot_consommable
+    const lot_consommable = await prisma.lot_consommable.create({
+      data: lotData,
+      include: {
+        donneur: {
+          select: {
+            id_donneur: true,
+            nom_donneur: true,
+            fonction_donneur: true
+          }
+        },
+        consommable: {
+          select: {
+            id_consommable: true,
+            nom_consommable: true,
+            unite: true,
+            prix_unitaire: true
+          }
+        }
+      }
     });
 
-    res.status(200).json(lot_consommable);
+    // Calculer l'ancienne quantité (0 si null)
+    const ancienneQuantite = consommable.quantite_consommable ?? 0;
+
+    // Mettre à jour la quantité du consommable
+    const quantiteUpdate = {
+      quantite_consommable: ancienneQuantite + Number(quantite_don)
+    };
+
+    // Mettre à jour le prix_unitaire du consommable si PU est fourni
+    if (PU !== undefined && PU !== null && Number(PU) > 0) {
+      // Option 1: Remplacer l'ancien prix
+      quantiteUpdate.prix_unitaire = Number(PU);
+      
+      // Option 2: Calculer la moyenne pondérée (décommentez si besoin)
+      /*
+      const ancienPrix = consommable.prix_unitaire ?? 0;
+      const totalQuantite = ancienneQuantite + Number(quantite_don);
+      if (totalQuantite > 0) {
+        quantiteUpdate.prix_unitaire = Math.round(
+          ((ancienneQuantite * ancienPrix) + (Number(quantite_don) * Number(PU))) / totalQuantite
+        );
+      }
+      */
+    }
+
+    await prisma.consommable.update({
+      where: { id_consommable: Number(id_consommable) },
+      data: quantiteUpdate
+    });
+
+    // Optionnel: Créer une notification
+    try {
+      await prisma.notification.create({
+        data: {
+          type: "CONSOMMABLE_ENVOYE",
+          message: `Nouveau lot de consommable ajouté: ${consommable.nom_consommable} (${quantite_don} ${consommable.unite || 'unités'})`,
+          destinataireType: "ADMIN",
+          consommable: {
+            connect: { id_consommable: Number(id_consommable) }
+          }
+        }
+      });
+    } catch (notificationError) {
+      console.error("Erreur lors de la création de la notification:", notificationError);
+      // Ne pas bloquer la création du lot si la notification échoue
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Lot de consommable créé avec succès",
+      data: lot_consommable
+    });
   } catch (error) {
-    res.status(500).json(error);
+    console.error("Erreur lors de la création du lot consommable:", error);
+    
+    // Gestion des erreurs spécifiques
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        success: false,
+        message: "Violation de contrainte unique (doublon détecté)"
+      });
+    }
+    
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        success: false,
+        message: "Violation de clé étrangère (référence invalide)"
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur lors de la création du lot",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
-
 const delete_lot_consommable = asyncHandler(async (req, res, next) => {
   try {
     const id_lot_consommable = Number(req.params.id);

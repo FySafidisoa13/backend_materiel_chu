@@ -11,6 +11,7 @@ import {
   get_notification,
 } from "../controllers/notification_controller.js";
 import { check_type_compte, checkCodeRecuperation, hasResponsableCompte, login2, resetPassword, update_type_compte } from "../controllers/compte_controller.js";
+import { get_pu_by_lot_consommable } from "../controllers/consommable_controller.js";
 
 const standard_routes = Router();
 
@@ -34,6 +35,7 @@ standard_routes.route("/checkCodeRecuperation").post(checkCodeRecuperation);
 standard_routes.route("/resetPassword").post(resetPassword);
 standard_routes.route("/update_type_compte").post(update_type_compte);
 standard_routes.route("/check_type_compte").post(check_type_compte);
+standard_routes.route("/get_pu_by_lot_consommable/:id").get(get_pu_by_lot_consommable);
 
 
 export default standard_routes;

@@ -91,6 +91,20 @@ const get_one_consommable = asyncHandler(async (req, res, next) => {
     res.status(500).send(error);
   }
 });
+const get_pu_by_lot_consommable = asyncHandler(async (req, res, next) => {
+  const id_consommable = req.params.id;
+  try {
+    const consommable = await prisma.lot_consommable.findMany({
+      where: { id_consommable: Number(id_consommable) },
+      select: {
+        PU: true,
+      },
+    });
+    res.status(200).json(consommable);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
 
 export {
   get_consommable,
@@ -99,4 +113,5 @@ export {
   update_consommable,
   create_consommable,
   get_one_consommable,
+  get_pu_by_lot_consommable,
 };
