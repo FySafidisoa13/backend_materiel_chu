@@ -26,7 +26,7 @@ ENV PORT=$PORT
 ENV SALT_ROUNDS=$SALT_ROUNDS
 
 # Génération du schéma Prisma
-RUN npx prisma generate
+RUN npx prisma db push
 
 # Exposition du port 9095
 EXPOSE 9095

@@ -5,7 +5,6 @@ const prisma = new PrismaClient();
 
 // Get all notifications
 const get_notifications = asyncHandler(async (req, res, next) => {
-    console.log("get notification");
     
   try {
     const notifications = await prisma.notification.findMany({
@@ -23,7 +22,7 @@ const get_notifications = asyncHandler(async (req, res, next) => {
 });
 
 const get_notification = asyncHandler(async (req, res, next) => {
-  console.log("get notification");
+  // console.log("get notification");
 
   try {
     const { id } = req.params; // id_personne dans l'URL
