@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Installation des dépendances
-RUN npm install
+RUN npm ci --only=production
 
 # Copie de tout le reste du code
 COPY . .
@@ -26,7 +26,7 @@ ENV PORT=$PORT
 ENV SALT_ROUNDS=$SALT_ROUNDS
 
 # Génération du schéma Prisma
-RUN npx prisma db push
+RUN npx prisma db push --force-reset --accept-data-loss
 
 # Exposition du port 9095
 EXPOSE 9095

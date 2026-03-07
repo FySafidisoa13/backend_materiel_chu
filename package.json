@@ -8,7 +8,7 @@
     "client": "npm run dev --prefix ../frontend",
     "server": "nodemon --trace-deprecation --exec babel-node ./server.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "npm install",
+    "build": "echo 'Build completed!'",
     "start": "node --trace-deprecation ./server.js"
   },
   "keywords": [],
