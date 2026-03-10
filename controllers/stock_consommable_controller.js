@@ -19,7 +19,8 @@ const get_stock_consommable = asyncHandler(async (req, res, next) => {
           select: {
             id_consommable: true,
             quantite_don: true,
-            date_don_consommable: true
+            date_don_consommable: true,
+            PU: true // inclure PU pour les lots (entrées)
           }
         },
         prets: {
@@ -42,23 +43,25 @@ const get_stock_consommable = asyncHandler(async (req, res, next) => {
       const operations = [];
       let currentStock = 0;
 
-      // Ajouter les entrées (lots)
+      // Ajouter les entrées (lots) avec PU
       data.lot_consommables.forEach(lot => {
         operations.push({
-          date: lot.date_don_consommable, // On garde la date telle quelle
+          date: lot.date_don_consommable,
           type: 'entree',
           quantite: lot.quantite_don,
-          service: null
+          service: null,
+          PU: lot.PU ?? null
         });
       });
 
-      // Ajouter les sorties (prets)
+      // Ajouter les sorties (prets) — PU null pour les sorties (on n'affiche PU que pour les entrées)
       data.prets.forEach(pret => {
         operations.push({
-          date: pret.date_envoi, // On garde la date telle quelle
+          date: pret.date_envoi,
           type: 'sortie',
           quantite: pret.quantite_pret,
-          service: pret.service.nom_service
+          service: pret.service ? pret.service.nom_service : null,
+          PU: null
         });
       });
 
@@ -72,6 +75,7 @@ const get_stock_consommable = asyncHandler(async (req, res, next) => {
           stockTable.push({
             Date: op.date,
             'Nom Service': '-',
+            PU: op.PU,
             Existants: currentStock,
             Entrees: op.quantite,
             Sorties: 0,
@@ -82,6 +86,7 @@ const get_stock_consommable = asyncHandler(async (req, res, next) => {
           stockTable.push({
             Date: op.date,
             'Nom Service': op.service,
+            PU: op.PU, // sera null pour les sorties
             Existants: currentStock,
             Entrees: 0,
             Sorties: op.quantite,
@@ -112,6 +117,7 @@ const get_stock_consommable = asyncHandler(async (req, res, next) => {
     });
   }
 });
+
 
 export {
 get_stock_consommable,
